@@ -83,6 +83,10 @@ def predict():
         is_weekend = int(request.form['is_weekend'])
         is_rush_hour = int(request.form['is_rush_hour'])
         
+        # Get map location
+        map_lat = float(request.form.get('latitude', 28.4595))
+        map_lon = float(request.form.get('longitude', 77.0266))
+        
         # Get health profile data
         age = int(request.form.get('age', 30))
         asthma = 'asthma' in request.form
@@ -145,6 +149,29 @@ def predict():
             future_risk_level = "High"
         else:
             future_risk_level = "Emergency"
+            
+        # Generate Dynamic Health Recommendations
+        condition_specific_advice = []
+        if asthma and pm10 > 50:
+            condition_specific_advice.append("Keep your rescue inhaler accessible; PM10 levels are elevated and may trigger symptoms.")
+        if "Heart disease" in conditions and risk_level in ["High", "Emergency"]:
+            condition_specific_advice.append("Limit physical exertion. High pollution places extra stress on the cardiovascular system.")
+        if "Immunocompromised" in conditions or "Pregnant" in conditions:
+            condition_specific_advice.append("Consider wearing a high-quality N95 mask to reduce exposure to airborne particles.")
+        if age > 60 or age < 12:
+            condition_specific_advice.append("Vulnerable age group: Please minimize outdoor activities during peak pollution hours.")
+
+        general_recommendations = []
+        if temperature > 35:
+            general_recommendations.append("It's extremely hot. Stay hydrated and avoid direct sunlight.")
+        if humidity > 70 and temperature > 30:
+            general_recommendations.append("High heat and humidity can cause heat exhaustion. Stay in air-conditioned environments.")
+        if pm10 > 100:
+            general_recommendations.append("Air quality is very poor. Keep windows closed and run an air purifier if available.")
+        if co2 > 1000:
+            general_recommendations.append("Indoor/Local CO2 levels are high. Ensure proper ventilation if you are indoors.")
+        if risk_level == "Low":
+            general_recommendations.append("Conditions are excellent for outdoor activities. Enjoy the fresh air!")
         
         # Return results
         return render_template('results.html', 
@@ -164,10 +191,16 @@ def predict():
                               age=age,
                               asthma=asthma,
                               conditions=conditions,
-                              multiplier=multiplier)
+                              map_lat=map_lat,
+                              map_lon=map_lon,
+                              multiplier=multiplier,
+                              condition_specific_advice=condition_specific_advice,
+                              general_recommendations=general_recommendations)
                               
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

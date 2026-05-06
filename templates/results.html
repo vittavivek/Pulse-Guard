@@ -4,200 +4,254 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PulseGuard - Results</title>
+    <title>PulseGuard - Environmental Analysis</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    {% set theme_color = '#10b981' %}
+    {% if risk_level == 'Moderate' %}{% set theme_color = '#f59e0b' %}
+    {% elif risk_level == 'High' %}{% set theme_color = '#ef4444' %}
+    {% elif risk_level == 'Emergency' %}{% set theme_color = '#8b5cf6' %}{% endif %}
+
+    {% set future_theme_color = '#10b981' %}
+    {% if future_risk_level == 'Moderate' %}{% set future_theme_color = '#f59e0b' %}
+    {% elif future_risk_level == 'High' %}{% set future_theme_color = '#ef4444' %}
+    {% elif future_risk_level == 'Emergency' %}{% set future_theme_color = '#8b5cf6' %}{% endif %}
+
     <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: rgba(30, 41, 59, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --theme: {{ theme_color }};
+            --future-theme: {{ future_theme_color }};
+        }
+
+        @media print {
+            body { background: white !important; color: black !important; }
+            .dashboard-container { box-shadow: none !important; border: none !important; padding: 0 !important; }
+            .action-buttons, .back-btn, #mapSearchInput, #mapSearchBtn { display: none !important; }
+            .glass-card, .alert-card { background: #f8f9fa !important; border: 1px solid #dee2e6 !important; color: black !important; box-shadow: none !important; }
+            .text-muted { color: #6c757d !important; }
+            h1, h2, h3, h4, h5, p, div { color: black !important; text-shadow: none !important; }
+            .aqi-value { color: black !important; }
+        }
+
         body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #11998e 0%, #0575E6 100%);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(16, 185, 129, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(239, 68, 68, 0.05), transparent 25%);
+            color: var(--text-main);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             padding: 40px 20px;
         }
 
         .dashboard-container {
-            width: 100%;
-            max-width: 1600px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(25px);
-            -webkit-backdrop-filter: blur(25px);
-            border-radius: 40px;
-            padding: 50px;
-            box-shadow: 0 35px 60px rgba(0, 0, 0, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.5);
-            position: relative;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
-        /* Top Weather Section */
-        .weather-top {
+        .page-title {
+            font-weight: 800;
+            font-size: 2.5rem;
+            letter-spacing: -1px;
+            margin-bottom: 5px;
+            background: linear-gradient(to right, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .glass-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--card-border);
+            border-radius: 24px;
+            padding: 30px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Hero AQI Card */
+        .aqi-hero-card {
             display: flex;
             align-items: center;
-            margin-bottom: 40px;
-        }
-
-        .weather-icon {
-            font-size: 80px;
-            color: #4da6ff;
-            margin-right: 20px;
-            line-height: 1;
-            text-shadow: 0 10px 20px rgba(77, 166, 255, 0.3);
-        }
-
-        .temperature-display {
-            font-size: 100px;
-            font-weight: 600;
-            color: #333;
-            line-height: 1;
-            margin-right: 20px;
-        }
-
-        .temperature-display span {
-            font-size: 50px;
-            vertical-align: super;
-        }
-
-        .weather-desc-divider {
-            height: 60px;
-            width: 1px;
-            background: rgba(0, 0, 0, 0.1);
-            margin-right: 20px;
-        }
-
-        .weather-condition {
-            font-size: 24px;
-            color: #555;
-            font-weight: 500;
-            margin-bottom: 5px;
-        }
-
-        .details-list {
-            margin-top: 20px;
-            font-size: 16px;
-            color: #666;
-        }
-
-        .details-list i {
-            margin-right: 8px;
-            width: 20px;
-            text-align: center;
-        }
-
-        /* Bottom Cards Section */
-        .cards-row {
-            display: flex;
-            gap: 20px;
-        }
-
-        .dark-card {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            border-radius: 30px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-            color: white;
-            padding: 30px;
+            justify-content: space-between;
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.15);
         }
 
-        .humidity-icon-wrapper {
-            width: 50px;
-            height: 50px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            color: #4da6ff;
-            margin-bottom: 20px;
-        }
-
-        /* AQI SVG Gauge */
-        .aqi-card {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 60px;
-        }
-
-        .gauge-container {
-            width: 220px;
-            height: 110px;
-            position: relative;
-        }
-
-        .gauge-svg {
-            width: 100%;
-            overflow: visible;
-        }
-
-        .gauge-label {
+        .aqi-hero-card::before {
+            content: '';
             position: absolute;
-            bottom: -20px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 14px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            color: white;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, var(--theme) 0%, transparent 40%);
+            opacity: 0.15;
+            animation: pulse 4s infinite alternate;
         }
 
-        .aqi-info {
-            text-align: left;
-            z-index: 1;
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.1; }
+            100% { transform: scale(1.1); opacity: 0.2; }
+        }
+
+        .aqi-value-container {
+            position: relative;
+            z-index: 2;
+        }
+
+        .aqi-title {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-weight: 600;
         }
 
         .aqi-value {
-            font-size: 65px;
-            font-weight: 700;
+            font-size: 6rem;
+            font-weight: 800;
             line-height: 1;
+            color: var(--theme);
+            text-shadow: 0 0 40px rgba(var(--theme), 0.5);
             margin-bottom: 5px;
         }
 
-        .aqi-value span {
-            font-size: 20px;
-            font-weight: 400;
-        }
-
-        .aqi-desc {
-            font-size: 16px;
-            color: #cbd5e1;
-            max-width: 450px;
-            line-height: 1.5;
-        }
-
-        /* Personalized Recommendations Section */
-        .personal-card {
-            background: white;
-            border-radius: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-            padding: 30px;
-            margin-top: 30px;
-        }
-
-        .btn-custom {
-            background: linear-gradient(135deg, #11998e 0%, #0575E6 100%);
-            border: none;
+        .aqi-status {
+            font-size: 1.8rem;
+            font-weight: 600;
             color: white;
+            letter-spacing: 1px;
+        }
+
+        /* Future AQI Card */
+        .future-card {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .future-value {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1;
+            color: var(--future-theme);
+            margin-bottom: 10px;
+        }
+
+        /* Mini Cards */
+        .mini-card-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--text-muted);
+        }
+        .mini-card-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: white;
+        }
+        .mini-card-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Alerts Section */
+        .alert-card {
+            border-radius: 16px;
+            padding: 20px 25px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+            animation: slideIn 0.5s ease-out forwards;
+            opacity: 0;
+            transform: translateX(-20px);
+        }
+
+        .alert-card.condition {
+            background: rgba(239, 68, 68, 0.1);
+            border-left: 4px solid #ef4444;
+        }
+        
+        .alert-card.general {
+            background: rgba(245, 158, 11, 0.1);
+            border-left: 4px solid #f59e0b;
+        }
+
+        .alert-icon {
+            font-size: 2rem;
+        }
+        .condition .alert-icon { color: #ef4444; }
+        .general .alert-icon { color: #f59e0b; }
+
+        .alert-content h4 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: white;
+        }
+        .alert-content ul {
+            margin: 0;
+            padding-left: 20px;
+            color: var(--text-muted);
+        }
+        .alert-content li { margin-bottom: 5px; }
+
+        @keyframes slideIn {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Map styling */
+        #map {
+            border-radius: 16px;
+            height: 400px;
+            width: 100%;
+            border: 1px solid var(--card-border);
+        }
+
+        /* Buttons */
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 50px;
+            font-weight: 600;
+            padding: 12px 30px;
             transition: all 0.3s ease;
-            box-shadow: 0 10px 20px rgba(5, 117, 230, 0.3);
         }
-
-        .btn-custom:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 25px rgba(5, 117, 230, 0.4);
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.2);
             color: white;
+            transform: translateY(-2px);
         }
-
-        .dot-indicator {
-            transition: transform 1.5s ease-out;
-            transform-origin: 60px 60px;
+        .btn-action {
+            background: var(--theme);
+            color: #000;
+            font-weight: 800;
+            border: none;
+        }
+        .btn-action:hover {
+            background: white;
+            color: #000;
         }
     </style>
 </head>
@@ -205,183 +259,189 @@
 <body>
 
     <div class="dashboard-container">
-
-        <!-- Top Weather Area -->
-        <div class="row mb-5">
-            <div class="col-md-12">
-                <div class="weather-top">
-                    <i class="bi bi-cloud-sun-fill weather-icon"></i>
-                    <div class="temperature-display">{{ temperature | int }}<span>°c</span></div>
-                    <div class="weather-desc-divider"></div>
-                    <div>
-                        <div class="weather-condition">
-                            {% if risk_level == 'Low' %}Clear and healthy
-                            {% elif risk_level == 'Moderate' %}Partly cloudy
-                            {% else %}Hazy / Poor Visibility{% endif %}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="details-list">
-                            <div><i class="bi bi-arrow-up text-secondary"></i> {{ temperature + 5 }}°c &nbsp;&nbsp; <i
-                                    class="bi bi-arrow-down text-secondary"></i> {{ temperature - 4 }}°c</div>
-                            <div class="mt-3"><i class="bi bi-thermometer-half"></i> PM10: <strong>{{ pm10 }}
-                                    µg/m³</strong></div>
-                            <div class="mt-2"><i class="bi bi-wind"></i> CO2 Level: <strong>{{ co2 }} PPM</strong></div>
-                            <div class="mt-2 text-muted"><i class="bi bi-info-circle"></i> Base PM2.5 Prediction: {{
-                                base_pm2_5 }} µg/m³</div>
-                        </div>
-                    </div>
-                </div>
+        
+        <div class="d-flex justify-content-between align-items-end mb-5">
+            <div>
+                <h1 class="page-title">Environmental Risk Analysis</h1>
+                <p class="text-muted mb-0"><i class="bi bi-geo-alt-fill me-2"></i>Location Analysis &nbsp;&bull;&nbsp; {{ timestamp|default("Real-time Data") }}</p>
             </div>
+            <a href="/" class="btn btn-glass back-btn"><i class="bi bi-arrow-left me-2"></i>New Search</a>
         </div>
 
-        <!-- Bottom Dark Cards -->
-        <div class="cards-row flex-column flex-md-row">
-            <!-- AQI Card -->
-            <div class="dark-card aqi-card" style="flex: 2;">
-                <div class="gauge-container">
-                    <svg viewBox="0 0 120 70" class="gauge-svg">
-                        <!-- Background Arc -->
-                        <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="#60646b" stroke-width="6"
-                            stroke-linecap="round" />
-
-                        <!-- Gradient Definition -->
-                        <defs>
-                            <linearGradient id="aqiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stop-color="#34c759" /> <!-- Green -->
-                                <stop offset="33%" stop-color="#ffcc00" /> <!-- Yellow -->
-                                <stop offset="66%" stop-color="#ff3b30" /> <!-- Red -->
-                                <stop offset="100%" stop-color="#af52de" /> <!-- Purple -->
-                            </linearGradient>
-                        </defs>
-
-                        <!-- Gradient Arc -->
-                        <!-- PM2.5 max mapped near 150 for 180deg. Formula: min((pm2.5 / 150)*180, 180) -->
-                        {% set rotation = (pm2_5 / 150) * 180 %}
-                        {% set capped_rotation = rotation if rotation < 180 else 180 %} <!-- Arc mask using dasharray:
-                            total length is ~157. Draw partial string? -->
-                            <!-- In the image, the entire colored spectrum is ALWAYS shown. Dot moves over it. -->
-                            <path d="M 10 60 A 50 50 0 0 1 110 60" fill="none" stroke="url(#aqiGrad)" stroke-width="6"
-                                stroke-linecap="round" />
-
-                            <g class="dot-indicator" style="transform: rotate({{ capped_rotation }}deg);">
-                                <circle cx="10" cy="60" r="5" fill="#ffffff" stroke="#4a4e54" stroke-width="2" />
-                            </g>
-                    </svg>
-                    <div class="gauge-label">{{ risk_level | upper }}</div>
+        <!-- ROW 1: AQI Comparison -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="glass-card aqi-hero-card">
+                    <div class="aqi-value-container">
+                        <div class="aqi-title">Current Air Quality Index (PM2.5)</div>
+                        <div class="aqi-value">{{ pm2_5 | int }}</div>
+                        <div class="aqi-status">{{ risk_level | upper }}</div>
+                        <p class="text-muted mt-2 mb-0" style="max-width: 400px;">{{ risk_message }}</p>
+                    </div>
+                    <div style="font-size: 8rem; opacity: 0.1; color: var(--theme);">
+                        <i class="bi bi-lungs-fill"></i>
+                    </div>
                 </div>
-
-                <div class="aqi-info ms-4">
-                    <div class="aqi-value">{{ pm2_5 | int }} <span>AQI</span></div>
-                    <div class="aqi-desc">{{ risk_message }}</div>
-                </div>
-
-                <i class="bi bi-arrow-up-right position-absolute top-0 end-0 m-3 text-secondary fs-5"
-                    style="opacity: 0.5;"></i>
             </div>
-
-            <!-- Humidity Card -->
-            <div class="dark-card text-center d-flex flex-column justify-content-center" style="flex: 1;">
-                <div style="color: #4da6ff; font-size: 24px; margin-bottom: 5px;"><i class="bi bi-droplet-fill"></i>
-                </div>
-                <div class="text-secondary mb-2" style="font-size: 14px;">Current Humidity</div>
-                <div style="font-size: 40px; font-weight: 700; line-height: 1; color: white;">
-                    {{ humidity | int }} <span style="font-size: 20px; color: white;">%</span>
-                </div>
-                <div style="font-size: 14px; font-weight: 500; margin-top: 15px; color: #ccc;">
-                    {% if humidity < 30 %}Low moisture. {% elif humidity> 60 %}High humidity.
-                        {% else %}Optimal moisture.
+            <div class="col-lg-4">
+                <div class="glass-card future-card">
+                    <div class="aqi-title">48-Hour Forecast</div>
+                    <div class="d-flex align-items-center">
+                        <div class="future-value me-3">{{ future_pm2_5 | int }}</div>
+                        {% if future_pm2_5 > pm2_5 %}
+                            <i class="bi bi-graph-up-arrow text-danger fs-3"></i>
+                        {% elif future_pm2_5 < pm2_5 %}
+                            <i class="bi bi-graph-down-arrow text-success fs-3"></i>
+                        {% else %}
+                            <i class="bi bi-dash text-muted fs-1"></i>
                         {% endif %}
-                </div>
-            </div>
-
-            <!-- 48-Hour Forecast Card -->
-            <div class="dark-card text-center d-flex flex-column justify-content-center" style="flex: 1;">
-                <div style="color: #4da6ff; font-size: 24px; margin-bottom: 10px;"><i class="bi bi-clock-history"></i>
-                </div>
-                <div class="text-secondary mb-2" style="font-size: 14px;">Forecast in 48 Hrs</div>
-                <div
-                    style="font-size: 36px; font-weight: 700; line-height: 1; color: {% if future_risk_level == 'Low' %}#34c759{% elif future_risk_level == 'Moderate' %}#ffcc00{% elif future_risk_level == 'High' %}#ff3b30{% else %}#af52de{% endif %};">
-                    {{ future_pm2_5 | int }} <span style="font-size: 16px; color: white;">AQI</span>
-                </div>
-                <div style="font-size: 16px; font-weight: 500; margin-top: 5px; margin-bottom: 15px;">{{
-                    future_risk_level | upper }}</div>
-
-                <div class="d-flex justify-content-center gap-3 pt-3 border-top"
-                    style="border-color: rgba(255,255,255,0.1) !important;">
-                    <div>
-                        <div style="font-size: 12px; color: #ccc;">Temp</div>
-                        <div style="font-size: 16px; font-weight: 600;"><i
-                                class="bi bi-thermometer-half text-primary"></i> {{ future_temp }}°C</div>
                     </div>
-                    <div>
-                        <div style="font-size: 12px; color: #ccc;">Humidity</div>
-                        <div style="font-size: 16px; font-weight: 600;"><i class="bi bi-droplet text-info"></i> {{
-                            future_humidity }}%</div>
-                    </div>
+                    <div class="aqi-status" style="font-size: 1.2rem;">{{ future_risk_level | upper }}</div>
+                    <p class="text-muted mt-2 mb-0 small">Predicted risk level in 48 hours based on ML modeling.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Health Profile Advice -->
-        <div class="personal-card">
-            <h4 class="mb-3 text-primary"><i class="bi bi-person-badge"></i> Personalized Profile Assessment</h4>
-            <div class="row">
-                <div class="col-md-5">
-                    <ul class="list-unstyled mb-0 text-muted">
-                        <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i> Age: <strong>{{ age }}</strong>
-                        </li>
-                        <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i> Asthma: <strong>{% if asthma
-                                %}Yes{% else %}No{% endif %}</strong></li>
-                        <li class="mb-2"><i class="bi bi-check2 text-success me-2"></i> Conditions: <strong>{% if
-                                conditions %}{{ conditions|join(', ') }}{% else %}None{% endif %}</strong></li>
-                    </ul>
-                    <div class="mt-2 text-muted"><small><em>Risk Multiplier Applied: {{ multiplier }}x</em></small>
+        <!-- ROW 2: Alerts -->
+        {% if condition_specific_advice or general_recommendations %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <h3 class="mb-3" style="font-weight: 600; font-size: 1.3rem;">Active Health Advisories</h3>
+                
+                {% if condition_specific_advice %}
+                <div class="alert-card condition" style="animation-delay: 0.1s;">
+                    <i class="bi bi-heart-pulse-fill alert-icon"></i>
+                    <div class="alert-content w-100">
+                        <h4>Condition-Specific Alerts</h4>
+                        <ul>
+                            {% for advice in condition_specific_advice %}
+                                <li>{{ advice }}</li>
+                            {% endfor %}
+                        </ul>
                     </div>
                 </div>
-                <div class="col-md-7 border-start ps-md-4 mt-3 mt-md-0">
-                    {% if asthma or conditions %}
-                    <strong class="d-block mb-2 text-dark">Condition-Specific Advice:</strong>
-                    <ul class="text-muted" style="font-size: 14px;">
-                        {% if asthma %}<li>Keep your rescue inhaler accessible at all times today.</li>{% endif %}
-                        {% if conditions %}<li>Monitor symptoms related to your pre-existing conditions.</li>{% endif %}
-                    </ul>
-                    {% endif %}
+                {% endif %}
 
-                    {% if risk_level in ['High', 'Emergency'] %}
-                    <strong class="d-block mb-1 text-danger {% if asthma or conditions %}mt-3{% endif %}">
-                        <i class="bi bi-exclamation-triangle-fill"></i> General Recommendations:
-                    </strong>
-                    <ul class="text-muted" style="font-size: 14px;">
-                        <li>Consider wearing an N95 mask indoors/outdoors</li>
-                        <li>Limit outdoor strenuous exercise</li>
-                    </ul>
-                    {% endif %}
+                {% if general_recommendations %}
+                <div class="alert-card general" style="animation-delay: 0.2s;">
+                    <i class="bi bi-exclamation-triangle-fill alert-icon"></i>
+                    <div class="alert-content w-100">
+                        <h4>General Public Advisory</h4>
+                        <ul>
+                            {% for advice in general_recommendations %}
+                                <li>{{ advice }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- ROW 3: Pollutant Deep Dive -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="glass-card text-center">
+                    <i class="bi bi-cloud-haze2-fill mini-card-icon"></i>
+                    <div class="mini-card-value">{{ pm10 }} <span style="font-size: 1rem; color: #94a3b8;">µg/m³</span></div>
+                    <div class="mini-card-label">Particulate Matter (PM10)</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card text-center">
+                    <i class="bi bi-wind mini-card-icon"></i>
+                    <div class="mini-card-value">{{ co2 }} <span style="font-size: 1rem; color: #94a3b8;">PPM</span></div>
+                    <div class="mini-card-label">CO2 Concentration</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="glass-card text-center">
+                    <i class="bi bi-thermometer-sun mini-card-icon"></i>
+                    <div class="mini-card-value">{{ temperature | int }}°C</div>
+                    <div class="mini-card-label">Humidity: {{ humidity }}%</div>
                 </div>
             </div>
         </div>
 
-        <!-- Live Monitoring Map -->
-        <div class="personal-card p-0 overflow-hidden"
-            style="margin-top: 30px; height: 400px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.5); position: relative; z-index: 10;">
-            <script type="module"
-                src="https://js.arcgis.com/embeddable-components/4.33/arcgis-embeddable-components.esm.js"></script>
-            <arcgis-embedded-map style="height:100%; width:100%; border-radius: 30px;"
-                item-id="a26b3adac9d3470aa6ef936e7488c3ae" theme="light" center="77.030975,28.432847"
-                scale="144447.638572" portal-url="https://iittnif-geointel.maps.arcgis.com">
-            </arcgis-embedded-map>
+        <!-- ROW 4: Map & Actions -->
+        <div class="row g-4 mb-5">
+            <div class="col-12">
+                <div class="glass-card p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-3 px-2">
+                        <div class="mini-card-label mb-0 text-white">Interactive Location Map</div>
+                        <div class="input-group" style="width: 250px;">
+                            <input type="text" id="mapSearchInput" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Search...">
+                            <button class="btn btn-outline-secondary btn-sm" id="mapSearchBtn"><i class="bi bi-search"></i></button>
+                        </div>
+                    </div>
+                    <div id="map"></div>
+                </div>
+            </div>
         </div>
 
-        <div class="mt-5 mb-3 text-center">
-            <a href="/" class="btn btn-custom px-5 py-3 rounded-pill shadow-lg" style="font-size: 1.2rem;"><i
-                    class="bi bi-arrow-left me-2"></i>Check Another Location</a>
+        <div class="row mb-5 action-buttons">
+            <div class="col-12 d-flex justify-content-center">
+                <button onclick="window.print()" class="btn btn-glass btn-action px-5 py-3 shadow-lg fs-5">
+                    <i class="bi bi-file-earmark-pdf-fill me-2"></i>Download PDF Report
+                </button>
+            </div>
         </div>
 
     </div>
 
-</body>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize map with searched location
+            var map = L.map('map').setView([{{ map_lat }}, {{ map_lon }}], 13);
+            
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 19,
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+            }).addTo(map);
 
+            var marker = L.marker([{{ map_lat }}, {{ map_lon }}]).addTo(map)
+                .bindPopup("Searched Location")
+                .openPopup();
+
+            // Map Search functionality
+            document.getElementById('mapSearchBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                searchLocation();
+            });
+
+            document.getElementById('mapSearchInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    searchLocation();
+                }
+            });
+
+            function searchLocation() {
+                var query = document.getElementById('mapSearchInput').value;
+                if (!query) return;
+
+                fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query))
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            var lat = parseFloat(data[0].lat);
+                            var lon = parseFloat(data[0].lon);
+                            
+                            map.flyTo([lat, lon], 12);
+                            marker.setLatLng([lat, lon])
+                                  .bindPopup(data[0].display_name)
+                                  .openPopup();
+                        } else {
+                            alert('Location not found');
+                        }
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert('Error searching location');
+                    });
+            }
+        });
+    </script>
+</body>
 </html>
