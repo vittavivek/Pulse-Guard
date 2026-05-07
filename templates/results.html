@@ -23,11 +23,11 @@
 
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --card-border: rgba(255, 255, 255, 0.1);
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
+            --bg-color: #f8fafc;
+            --card-bg: rgba(255, 255, 255, 0.8);
+            --card-border: rgba(0, 0, 0, 0.05);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
             --theme: {{ theme_color }};
             --future-theme: {{ future_theme_color }};
         }
@@ -63,7 +63,7 @@
             font-size: 2.5rem;
             letter-spacing: -1px;
             margin-bottom: 5px;
-            background: linear-gradient(to right, #fff, #94a3b8);
+            background: linear-gradient(to right, #0f172a, #334155);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -82,8 +82,8 @@
 
         .glass-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            border-color: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            border-color: rgba(0, 0, 0, 0.1);
         }
 
         /* Hero AQI Card */
@@ -91,7 +91,7 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(241, 245, 249, 0.9));
             position: relative;
             overflow: hidden;
         }
@@ -136,7 +136,7 @@
         .aqi-status {
             font-size: 1.8rem;
             font-weight: 600;
-            color: white;
+            color: var(--text-main);
             letter-spacing: 1px;
         }
 
@@ -164,7 +164,7 @@
         .mini-card-value {
             font-size: 2rem;
             font-weight: 800;
-            color: white;
+            color: var(--text-main);
         }
         .mini-card-label {
             font-size: 0.9rem;
@@ -206,7 +206,7 @@
             font-size: 1.2rem;
             font-weight: 600;
             margin-bottom: 10px;
-            color: white;
+            color: var(--text-main);
         }
         .alert-content ul {
             margin: 0;
@@ -229,9 +229,9 @@
 
         /* Buttons */
         .btn-glass {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--text-main);
+            border: 1px solid rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(10px);
             border-radius: 50px;
             font-weight: 600;
@@ -239,19 +239,19 @@
             transition: all 0.3s ease;
         }
         .btn-glass:hover {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
+            background: rgba(0, 0, 0, 0.1);
+            color: var(--text-main);
             transform: translateY(-2px);
         }
         .btn-action {
             background: var(--theme);
-            color: #000;
+            color: white;
             font-weight: 800;
             border: none;
         }
         .btn-action:hover {
-            background: white;
-            color: #000;
+            background: var(--text-main);
+            color: white;
         }
     </style>
 </head>
@@ -344,14 +344,14 @@
             <div class="col-md-4">
                 <div class="glass-card text-center">
                     <i class="bi bi-cloud-haze2-fill mini-card-icon"></i>
-                    <div class="mini-card-value">{{ pm10 }} <span style="font-size: 1rem; color: #94a3b8;">µg/m³</span></div>
+                    <div class="mini-card-value">{{ pm10 }} <span style="font-size: 1rem; color: var(--text-muted);">µg/m³</span></div>
                     <div class="mini-card-label">Particulate Matter (PM10)</div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="glass-card text-center">
                     <i class="bi bi-wind mini-card-icon"></i>
-                    <div class="mini-card-value">{{ co2 }} <span style="font-size: 1rem; color: #94a3b8;">PPM</span></div>
+                    <div class="mini-card-value">{{ co2 }} <span style="font-size: 1rem; color: var(--text-muted);">PPM</span></div>
                     <div class="mini-card-label">CO2 Concentration</div>
                 </div>
             </div>
@@ -369,9 +369,9 @@
             <div class="col-12">
                 <div class="glass-card p-3">
                     <div class="d-flex justify-content-between align-items-center mb-3 px-2">
-                        <div class="mini-card-label mb-0 text-white">Interactive Location Map</div>
+                        <div class="mini-card-label mb-0 text-dark">Interactive Location Map</div>
                         <div class="input-group" style="width: 250px;">
-                            <input type="text" id="mapSearchInput" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Search...">
+                            <input type="text" id="mapSearchInput" class="form-control form-control-sm bg-white text-dark border-secondary" placeholder="Search...">
                             <button class="btn btn-outline-secondary btn-sm" id="mapSearchBtn"><i class="bi bi-search"></i></button>
                         </div>
                     </div>
@@ -395,7 +395,7 @@
             // Initialize map with searched location
             var map = L.map('map').setView([{{ map_lat }}, {{ map_lon }}], 13);
             
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
                 maxZoom: 19,
                 attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
             }).addTo(map);
